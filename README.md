@@ -5,8 +5,10 @@
 This README covers the steps to:
 
 1. Create the Conda environment.
-2. Generate MuJoCo type‐hinting stubs (assuming `typings/` is already in the repo).
-3. Configure Pyright and Pylint to use those stubs.
+2. (Optional) Generate MuJoCo type‐hinting stubs—**not needed** if `typings/` already exists.
+3. (Optional) Configure Pyright—**not needed** if `pyrightconfig.json` is already present.
+4. (Optional) Configure Pylint—**not needed** if `.pylintrc` is already present.
+
 
 ---
 
@@ -32,7 +34,7 @@ pybind11-stubgen mujoco.mjx -o ./typings
 
 ## 3. Pyright Configuration (Not needed)
 Create a pyrightconfig.json in the project root (if it’s not already there):
-```bash
+```json
 {
   "typeCheckingMode": "basic",
   "extraPaths": [
@@ -43,9 +45,8 @@ Create a pyrightconfig.json in the project root (if it’s not already there):
 
 ## 4. Pylint Configuration (Not needed)
 Add a .pylintrc at the project root to silence missing‐module errors for MuJoCo:
-```bash
+```ini
 [TYPECHECK]
 ignored-modules=mujoco,mujoco.mjx
 ```
-
 
