@@ -1,0 +1,14 @@
+.idea/
+**/__pycache__/
+**/*.egg-info/
+**.zip
+**.ipynb
+training_results/
+ppo_tensorboard/
+MUJOCO_LOG.TXT
+logs/
+.DS_Store
+**/checkpoints_orbax/
+**/runs/
+**/checkpoints/
+**/logs_orbax/
