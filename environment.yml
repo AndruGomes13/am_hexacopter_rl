@@ -20,9 +20,7 @@ dependencies:
       - matplotlib
       - pyqtgraph
       - PyQt6
-      - jax[Cuda12]
+      - jax[cuda12]==0.6.0
       - pytest
       - -e . # This is to install the repo itself. TODO: This might not be great.
       - git+https://github.com/AndruGomes13/brax.git@ppo_curriculum
-      # - -e /Users/andru/Repos/brax
-      # - brax

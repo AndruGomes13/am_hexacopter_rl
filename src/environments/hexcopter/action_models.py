@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from enum import StrEnum
 from typing import Callable, Protocol, Type
-from environments.drone_tracking_3d.state_interfaces import AugmentedPipelineState, SensorData
+from environments.hexcopter.state_interfaces import AugmentedPipelineState, SensorData
 from models.hexcopter import get_allocation_matrix, get_inertia_matrix, get_max_propeller_thurst, get_thrust_torque_limits, get_mass
 import jax.numpy as jp
 
