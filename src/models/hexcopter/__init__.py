@@ -150,11 +150,11 @@ def get_thrust_torque_limits():
 
     return min_act * 0.9, max_act * 0.9
 
-
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
     alloc = get_allocation_matrix()
     alloc_inv = np.linalg.inv(alloc)
     print(alloc_inv)
     print(np.rad2deg(-0.523698))
+    IPython.embed()
     

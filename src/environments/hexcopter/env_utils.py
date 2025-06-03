@@ -1,6 +1,10 @@
+from enum import Enum
 from pathlib import Path
 import tempfile
+from typing import Tuple
 
+import mujoco
+import jax.numpy as jp
 # from models import skydio_x2 as model
 from models import hexcopter as model
 from jinja2 import Template
@@ -24,7 +28,6 @@ def get_env_xml_path() -> Path:
         tmp.flush()
         tmp_path = Path(tmp.name)
     return tmp_path
-
 
 if __name__ == "__main__":
     from brax.io import mjcf

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, fields
 from typing import Callable, NamedTuple, Self, Tuple
-from environments.hexcopter.utils import get_env_xml_path
+from environments.hexcopter.env_utils import get_env_xml_path
 import jax
 
 # from models.skydio_x2 import (
@@ -19,6 +19,7 @@ from brax.envs.wrappers.training import CurriculumProgressInfo
 from mujoco import mjx
 from flax import struct
 import brax.base as base
+from utils.mujoco_utils import get_qpos_qvel_slice_from_free_joint_body
 
 
 ENV_XML_PATH = get_env_xml_path().as_posix()
@@ -170,27 +171,7 @@ class RewardArgs:
 
 
 # --- Drone State related functionality ---
-
-
-def get_qpos_qvel_slice_from_free_joint_body(body_name: str):
-    """Returns (qpos_slice, qvel_slice)
-
-    TODO: Generalize to multiple joints type + bodies with multiple joints
-    """
-    body = model.body(body_name)
-    jnt_id = body.jntadr[0]
-    qpos_start_id = model.jnt_qposadr[jnt_id]
-    qvel_start_id = model.jnt_dofadr[jnt_id]
-
-    qpos_slice = jp.arange(qpos_start_id, qpos_start_id + 7)  # TODO: Eventually can generalize to other types of joints (no hardcoded 7)
-    qvel_slice = jp.arange(qvel_start_id, qvel_start_id + 6)
-
-    return qpos_slice, qvel_slice
-
-
-DRONE_QPOS_SLICE, DRONE_QVEL_SLICE = get_qpos_qvel_slice_from_free_joint_body(ComponentNames.BODY)
-
-
+DRONE_QPOS_SLICE, DRONE_QVEL_SLICE = get_qpos_qvel_slice_from_free_joint_body(ComponentNames.BODY, model)
 @struct.dataclass
 class DroneState:
     position: jp.ndarray

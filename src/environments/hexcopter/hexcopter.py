@@ -41,7 +41,7 @@ from environments.hexcopter.observation_models import (
     actor_observation_model_factory,
     critic_observation_model_factory,
 )
-from environments.hexcopter.utils import get_env_xml_path
+from environments.hexcopter.env_utils import get_env_xml_path
 import jax.scipy.spatial
 import jax.scipy.spatial.transform
 from models.hexcopter import (
@@ -51,11 +51,6 @@ from models.hexcopter import (
     ComponentNames
 )
 
-# from models.skydio_x2 import (
-#     get_allocation_matrix,
-#     get_mass,
-#     get_max_propeller_thurst,
-# )
 import mujoco
 import jax
 from jax import numpy as jp
