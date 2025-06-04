@@ -1,32 +1,28 @@
+import functools
+import logging
 import random
 import time
-from typing import Set
+from typing import Dict, Set
 import IPython
+from environments.hexcopter.config import ExperimentConfig
 from environments.hexcopter.observation_models import FullDroneObservation
 from environments.hexcopter.state_interfaces import (
     AugmentedEnvState,
+    AugmentedPipelineState,
+    CurriculumProgressInfo,
     create_parse_sensordata_fn,
 )
-from models.rpg_drone import get_allocation_matrix
-
+from brax import envs
 from brax.io import mjcf
-
-# from controllers.controllers import PIDState, pid_update
-# from controllers.drone_control_allocation import (
-#     ThrustTorque2D,
-#     create_control_allocation_2d_fn,
-# )
-from environments.hexcopter.drone_tracking_3d import Hexcopter3DEnv
-from environments.hexcopter.utils import get_env_xml_path
+from environments.hexcopter.hexcopter import Hexcopter3DEnv, get_domain_rand_fn_v2
+from environments.hexcopter.env_utils import get_env_xml_path
 
 # from models.skydio_x2 import get_x2_3d_xml
 from pynput import keyboard
 
 import mujoco
-import glfw
 import numpy as np
 from mujoco import mjx
-from OpenGL.GL import glEnable, GL_MULTISAMPLE
 import mujoco.viewer
 import jax.numpy as jp
 import jax
@@ -34,86 +30,79 @@ import jax
 
 import os
 
-np.set_printoptions(precision=2, suppress=True)
+np.set_printoptions(precision=3, suppress=True)
 
-os.environ["JAX_PLATFORM_NAME"] = "cpu"
+# os.environ["JAX_PLATFORM_NAME"] = "cpu"
 
-XML_MODEL_PATH = "src/environments/drone_over_wall/drone_over_wall.xml"
-# XML_MODEL_PATH = get_x2_3d_xml().as_posix()
 XML_MODEL_PATH = get_env_xml_path().as_posix()
-print(XML_MODEL_PATH)
 
-# Global viewport dimensions
-viewport_width, viewport_height = 800, 600
+def _print_done_reason(metrics: Dict[str, jp.ndarray]) -> None:
+    """Pretty‑print the termination reason encoded in `metrics`."""
+    reasons = {
+        "done/drone_outside_playground": "Drone outside playground",
+        "done/ball_outside_playground": "Ball outside playground",
+        "done/ball_hit_drone_side": "Ball hit drone side",
+        "done/drone_hit_ball": "Drone hit ball",
+        "done/ball_hit_goal_side": "Ball hit goal side",
+    }
+    for key, message in reasons.items():
+        if metrics.get(key, 0):
+            print(f"Done: {message}")
 
 
-def window_resize_callback(window, width, height):
-    global viewport_width, viewport_height
-    viewport_width, viewport_height = width, height
+def visualize(env: Hexcopter3DEnv, action_repeat: int) -> None:
+    """Launch an interactive MuJoCo viewer driven by `inference_fn`."""
+    progress = CurriculumProgressInfo.get_default_with_progress(1.0)
+    # env.setup_viz_regions(progress)
 
+    model: mujoco.MjModel = env.mj_model
+    mjdata = mujoco.MjData(model)
 
-def main_glfw():
-    # Load the MuJoCo model from our XML file
-    model = mujoco.MjModel.from_xml_path(XML_MODEL_PATH)
-    data = mujoco.MjData(model)
+    # JIT compile hot paths
+    reset_fn = jax.jit(env.reset)
+    step_fn = jax.jit(env.step)
 
-    # Initialize GLFW and request 4x MSAA
-    if not glfw.init():
-        raise RuntimeError("Could not initialize GLFW")
-    glfw.window_hint(glfw.SAMPLES, 4)
+    rng = jax.random.PRNGKey(random.randint(0, 1 << 16)).reshape(1, 2)
+    state: AugmentedEnvState = reset_fn(rng, progress)
 
-    # Create a window for rendering
-    width, height = 800, 600
-    window = glfw.create_window(width, height, "MuJoCo Playground", None, None)
-    if not window:
-        glfw.terminate()
-        raise RuntimeError("Could not create GLFW window")
-    glfw.make_context_current(window)
+    current_keys = _create_key_listener()
+    total_reward, local_len = 0.0, 0
 
-    # Enable multi-sampling and VSync
-    glEnable(GL_MULTISAMPLE)
-    glfw.swap_interval(1)
+    with mujoco.viewer.launch_passive(model, mjdata) as viewer:
+        viewer.cam.lookat[:] = 0, 0, 1
+        viewer.cam.distance = 9
+        viewer.cam.elevation = -30
 
-    # Set up window resize callback to update viewport
-    glfw.set_window_size_callback(window, window_resize_callback)
+        while viewer.is_running():
+            step_start = time.time()
+            if keyboard.Key.enter in current_keys :#or jp.isclose(state.done, 1):
+                _print_done_reason(state.metrics)
+                logging.info("Episode finished | steps=%d reward=%.2f", local_len, total_reward)
+                rng = jax.random.PRNGKey(random.randint(0, 1 << 16)).reshape(1, 2)
+                state = reset_fn(rng, progress)
+                total_reward, local_len = 0.0, 0
 
-    # Create a MuJoCo rendering context
-    context = mujoco.MjrContext(model, mujoco.mjtFontScale.mjFONTSCALE_150)
+            rng = jax.random.PRNGKey(random.randint(0, 1 << 16)).reshape(1, 2)
+            obs = state.obs
+            action = jp.zeros(7)
+            state = step_fn(state, action)
 
-    # Create a camera and scene
-    cam = mujoco.MjvCamera()
-    scn = mujoco.MjvScene(model, maxgeom=1000)
+            total_reward += state.reward
+            local_len += 1
 
-    # Configure camera parameters
-    cam.azimuth = 90  # rotation around z-axis
-    cam.elevation = -30  # rotation up/down
-    cam.distance = 8.0  # distance from the center
-    cam.lookat = np.array([0, 0, 0])
+            # Sync MuJoCo state
+            pipeline_state = state.pipeline_state.original_pipeline_state
+            mjdata.qpos[:] = np.asarray(pipeline_state.qpos)
+            mjdata.qvel[:] = np.asarray(pipeline_state.qvel)
+            mjdata.ctrl[:] = np.asarray(pipeline_state.ctrl)
+            mujoco.mj_forward(model, mjdata)
+            viewer.sync()
 
-    # Set up scene options (tweak these if needed for better lighting/shadows)
-    opt = mujoco.MjvOption()
+            # Real‑time pacing
+            dt = model.opt.timestep * action_repeat - (time.time() - step_start)
+            if dt > 0:
+                time.sleep(dt)
 
-    # Main rendering loop
-    while not glfw.window_should_close(window):
-        # Step the simulation
-        data.ctrl = np.array([100, 0])
-        mujoco.mj_step(model, data)
-
-        # Update scene
-        mujoco.mjv_updateScene(model, data, opt, None, cam, mujoco.mjtCatBit.mjCAT_ALL, scn)
-
-        # Retrieve the actual framebuffer size
-        fb_width, fb_height = glfw.get_framebuffer_size(window)
-        viewport = mujoco.MjrRect(0, 0, fb_width, fb_height)
-
-        # Render using the framebuffer dimensions
-        mujoco.mjr_render(viewport, scn, context)
-
-        # Swap buffers and poll GLFW events
-        glfw.swap_buffers(window)
-        glfw.poll_events()
-
-    glfw.terminate()
 
 
 def main_passive(current_keys: Set):
@@ -281,38 +270,43 @@ def main_brax(current_keys):
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step * 1)
             i += 1
+def _create_key_listener() -> set[keyboard.Key]:
+    """Starts a background listener that records currently pressed keys."""
+    pressed: set[keyboard.Key] = set()
 
+    def _on_press(key):  # noqa: ANN001
+        pressed.add(key)
 
-def setup_keyboard_listener():
-    current_keys = set()
-
-    def on_press(key):
-        try:
-            current_keys.add(key)
-        except AttributeError:
-            current_keys.add(key)
-        # print("Key pressed:", key)
-
-    def on_release(key):
-        try:
-            current_keys.discard(key)
-        except AttributeError:
-            current_keys.discard(key)
-        # print("Key released:", key)
+    def _on_release(key):  # noqa: ANN001
+        pressed.discard(key)
         if key == keyboard.Key.esc:
-            return False  # This stops the listener
+            return False  # Stop the listener
 
-    # Start the listener in a separate thread
-    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+    listener = keyboard.Listener(on_press=_on_press, on_release=_on_release)
     listener.start()
-    return current_keys
+    return pressed
 
+
+
+
+def main() -> None:  # noqa: D401
+    logging.basicConfig(format="%(levelname)s | %(message)s", level=logging.INFO)
+
+
+    exp_config = ExperimentConfig()
+
+    env = Hexcopter3DEnv(config=exp_config.env)
+    rand_fn = get_domain_rand_fn_v2(exp_config.env.stage_config.env_rand)
+
+    print(exp_config.env.action_delay_discrete, exp_config.env.action_delay)
+    v_rand_fn = functools.partial(rand_fn, rng=jax.random.PRNGKey(random.randint(0, 1 << 16)).reshape(1, 2)) if rand_fn is not None else None
+    env = envs.training.wrap_progress(
+        env,
+        episode_length=exp_config.train.episode_length,
+        action_repeat=exp_config.train.action_repeat,
+        randomization_fn=v_rand_fn,
+    )
+    visualize(env, exp_config.train.action_repeat)
 
 if __name__ == "__main__":
-    # main_brax()
-
-    current_keys = setup_keyboard_listener()
-    # main_passive(current_keys=current_keys)
-    main_brax(current_keys)
-    # main_regular()
-    # listener.join()
+    main()
