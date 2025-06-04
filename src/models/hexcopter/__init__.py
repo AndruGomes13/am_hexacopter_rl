@@ -15,15 +15,16 @@ import numpy as np
 BASE_DIR = Path(__file__).resolve().parent
 
 
-def _get_source_x2_3d_xml_path() -> Path:
+def _get_hex_template_xml_path() -> Path:
     XML_PATH = BASE_DIR / "hex_template.xml"
     return XML_PATH
 
 
-def get_x2_3d_xml_path() -> Path:
-    variables: dict[str, Path] = {"base_dir": BASE_DIR}
+def get_hex_xml_path() -> Path:
+    variables: dict[str, Path] = {"base_dir": BASE_DIR,
+                                  "mesh_dir": BASE_DIR / "meshes",}
 
-    rendered_xml = Template(_get_source_x2_3d_xml_path().read_text()).render(variables)
+    rendered_xml = Template(_get_hex_template_xml_path().read_text()).render(variables)
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".xml", prefix="rendered_", delete=False) as tmp:
         tmp.write(rendered_xml)
         tmp.flush()
@@ -31,8 +32,8 @@ def get_x2_3d_xml_path() -> Path:
     return tmp_path
 
 
-def get_x2_3d_xml_str() -> str:
-    with open(get_x2_3d_xml_path()) as f:
+def get_hex_xml_str() -> str:
+    with open(get_hex_xml_path()) as f:
         xml = f.read()
     return xml
 
@@ -60,7 +61,7 @@ class ComponentNames(StrEnum):
     GEOM_PADDLE = "paddle"
 
 
-model_spec = mujoco.MjSpec.from_file(get_x2_3d_xml_path().as_posix())
+model_spec = mujoco.MjSpec.from_file(get_hex_xml_path().as_posix())
 model = model_spec.compile()
 data = mujoco.MjData(model)
 mujoco.mj_forward(model, data)
