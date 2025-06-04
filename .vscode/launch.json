@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File (External Terminal)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "externalTerminal",
+            "noDebug": true,
+            "python": "/Users/andru/miniconda3/envs/volley-drone-2d-playground-env/bin/mjpython"
+        }
+    ]
+}
