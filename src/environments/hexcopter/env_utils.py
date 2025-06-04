@@ -19,7 +19,7 @@ def get_env_xml_path() -> Path:
 
     """
     variables = {
-        "hex_path": model.get_x2_3d_xml_path(),
+        "hex_path": model.get_hex_xml_path(),
     }
     xml_template = (BASE_DIR / "scene.xml").read_text()
     rendered_xml = Template(xml_template).render(variables)
