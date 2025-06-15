@@ -39,9 +39,9 @@ class ActionModel(ABC):
 # ---------    
 
 class ForceWzJointPos(ActionModel):
-    F_LIMITS_SYM = jp.array([15, 15, 15, 10])  # Force limits for x, y, z, and wz
-    PITCH_1_LIMITS = jp.array([0, 180])  # Pitch limits for arm pitch 1
-    PITCH_2_LIMITS = jp.array([-10, 45])  # Pitch limits for arm pitch 2
+    F_LIMITS_SYM = jp.array([15, 15, 15, 2])  # Force limits for x, y, z, and wz
+    PITCH_1_LIMITS = jp.array([0, 180]) * jp.pi / 180  # Pitch limits for arm pitch 1
+    PITCH_2_LIMITS = jp.array([-10, 45]) * jp.pi / 180  # Pitch limits for arm pitch 2
     
     @classmethod
     def mujoco_ctrl_from_normalized_action(cls, normalized_action: jp.ndarray, state: AugmentedPipelineState) -> jp.ndarray:
@@ -63,8 +63,8 @@ class ForceWzJointPos(ActionModel):
         # Clamp the arm pitch delta
         arm_pitch_1_delta = arm_1_pitch - state.last_ctrl[4]
         arm_2_joint_delta = arm_2_joint - state.last_ctrl[5]
-        arm_pitch_1_delta_clipped = jp.clip(arm_pitch_1_delta, -5, 5)
-        arm_2_joint_delta_clipped = jp.clip(arm_2_joint_delta, -5, 5)
+        arm_pitch_1_delta_clipped = jp.clip(arm_pitch_1_delta, -0.1, 0.1)
+        arm_2_joint_delta_clipped = jp.clip(arm_2_joint_delta, -0.1, 0.1)
         arm_1_pitch = state.last_ctrl[4] + arm_pitch_1_delta_clipped
         arm_2_joint = state.last_ctrl[5] + arm_2_joint_delta_clipped
 
