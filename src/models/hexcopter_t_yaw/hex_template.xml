@@ -1,0 +1,199 @@
+<mujoco model="Hexcopter">
+  <compiler autolimits="true" assetdir="assets" />
+
+  <default>
+    <mesh scale="0.001 0.001 0.001" />
+    <default class="hex">
+      <geom mass="0" />
+      <motor ctrlrange="0 46.17" />
+      <default class="visual">
+        <geom contype="0" conaffinity="0" />
+      </default>
+      <default class="collision">
+        <geom group="3" type="box" contype="0" conaffinity="0" />
+        <default class="rotor">
+          <geom type="ellipsoid" size=".13 .13 .01" contype="0" conaffinity="0" />
+        </default>
+      </default>
+      <site group="5" />
+    </default>
+  </default>
+
+  <!-- ################ BASE ASSETS ################ -->
+  <asset>
+        <mesh name="prop_ccw" file="{{mesh_dir}}/prop_ccw_assembly_remeshed_v3.stl"/>
+        <mesh name="prop" file="{{mesh_dir}}/propeller.stl"/>
+  </asset>
+  <!-- ################ END BASE ASSETS ################ -->
+
+
+  <!-- ################ ARM ASSETS ################## -->
+  <asset>
+        <!-- <mesh name="arm_base" file="{{mesh_dir}}/v2_arm_base_test.stl" /> -->
+        <mesh name="arm_link1_pitch" file="{{mesh_dir}}/arm_link1_pitch.stl" />
+        <mesh name="arm_link2_pitch" file="{{mesh_dir}}/arm_link2_pitch.stl" />
+        <mesh name="arm_link3_pitch" file="{{mesh_dir}}/arm_link3_pitch.stl" />
+        <!-- <mesh name="arm_link4_roll" file="{{mesh_dir}}/v2_arm_link4_roll.stl"/> -->
+        <!-- <mesh name="prop_arm_cw" file="{{mesh_dir}}/prop_arm_cw.stl"/> -->
+        <!-- <mesh name="prop_arm_ccw" file="{{mesh_dir}}/v2_prop_arm_ccw.stl"/> -->
+  </asset>
+  <!-- ################ END ARM ASSETS ################## -->
+
+
+  <worldbody>
+    <light name="spotlight" mode="targetbodycom" target="hex" pos="0 -1 2" />
+
+    <body name="hex" pos="0 0 -0.02" childclass="hex" gravcomp="1">
+      <!-- ################ BASE JOINT ################# -->
+      <!-- <joint name="drone_free_joint" type="free" /> -->
+      <!-- Joints for X/Y/Z/roll/pitch/yaw movement -->
+      <joint name="root_x"     type="slide" axis="1 0 0"/>
+      <joint name="root_y"     type="slide" axis="0 1 0"/>
+      <joint name="root_z"     type="slide" axis="0 0 1"/>
+      <!-- <joint name="root_roll"  type="hinge" axis="1 0 0"/> -->
+      <!-- <joint name="root_pitch" type="hinge" axis="0 1 0"/> -->
+      <joint name="root_yaw"   type="hinge" axis="0 0 1"/>
+      <!-- ################ END BASE JOINT ################# -->
+      
+      <inertial
+      mass="5.665"
+      diaginertia="0.2586 0.2865 0.4684"
+      pos="0 0 .02"
+      quat="1 0 0 0"
+      />
+      <site name = "hex_body"/>
+      <site name="imu" pos="0 0 .02" />
+
+      <!-- Red cylinder along X-axis -->
+      <!-- <geom class='visual' type="cylinder" size="0.01 0.1" rgba="1 0 0 1" pos="0.1 0 0" quat="0.7071 0 0.7071 0" /> -->
+      <!-- Green cylinder along Y-axis -->
+      <!-- <geom class='visual' type="cylinder" size="0.01 0.1" rgba="0 1 0 1" pos="0 0.1 0" quat="0.7071 -0.7071 0 0" /> -->
+
+      <!-- ########################### BASE ########################### -->
+      <!-- <geom name="arm1" type="box" pos="0.0606 0.0349 0"      size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="0.966 0 0 0.259"/>
+      <geom name="arm2" type="box" pos="0 0.07 0"             size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="0.707 0 0 0.707"/>
+      <geom name="arm3" type="box" pos="-0.0606 0.0349 0"     size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="0.259 0 0 0.966"/>
+      <geom name="arm4" type="box" pos="-0.0606 -0.0349 0"    size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="-0.259 0 0 0.966"/>
+      <geom name="arm5" type="box" pos="0 -0.07 0"            size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="0.707 0 0 -0.707"/>
+      <geom name="arm6" type="box" pos="0.0606 -0.0349 0"     size="0.47 0.003 0.001" rgba="0.3 0.3 0.8 1" mass="0.05" quat="0.966 0 0 -0.259"/> -->
+      <!-- ########################### END BASE ########################### -->
+
+      <!-- ###########################    ROTORS     ##########################  -->
+      <geom name="rotor1" type="cylinder" size="0.08 0.01" pos="-0.02885 -0.36700 -0.05993" quat="0.0000  0.2589  0.0000  0.9659" mass="0" />
+      <geom name="rotor2" type="cylinder" size="0.08 0.01" pos="-0.02885  0.36700 -0.05993" quat="0.9659  0.0000  0.2589  0.0000" mass="0" />
+      <geom name="rotor3" type="cylinder" size="0.08 0.01" pos=" 0.33196  0.15903 -0.05993" quat="0.8365 -0.1294 -0.2241 -0.4830" mass="0" />
+      <geom name="rotor4" type="cylinder" size="0.08 0.01" pos="-0.30371 -0.20797 -0.05993" quat="0.4830 -0.2241  0.1294  0.8365" mass="0" />
+      <geom name="rotor5" type="cylinder" size="0.08 0.01" pos=" 0.33196 -0.15903 -0.05993" quat="0.4830  0.2241  0.1294 -0.8365" mass="0" />
+      <geom name="rotor6" type="cylinder" size="0.08 0.01" pos="-0.30371  0.20797 -0.05993" quat="0.8365  0.1294 -0.2241  0.4830" mass="0" />
+
+
+      <site name="thrust1" pos="-0.02885 -0.36700 -0.05993" quat="0.0000  0.2589  0.0000  0.9659" />
+      <site name="thrust2" pos="-0.02885  0.36700 -0.05993" quat="0.9659  0.0000  0.2589  0.0000" />
+      <site name="thrust3" pos=" 0.33196  0.15903 -0.05993" quat="0.8365 -0.1294 -0.2241 -0.4830" />
+      <site name="thrust4" pos="-0.30371 -0.20797 -0.05993" quat="0.4830 -0.2241  0.1294  0.8365" />
+      <site name="thrust5" pos=" 0.33196 -0.15903 -0.05993" quat="0.4830  0.2241  0.1294 -0.8365" />
+      <site name="thrust6" pos="-0.30371  0.20797 -0.05993" quat="0.8365  0.1294 -0.2241  0.4830" />
+      <!-- ###########################  END ROTORS   ##########################  -->
+      <!-- ###########################     ARM     ##########################  -->
+        <body name = "arm_base_link" pos = "0.088 0 0.0" quat = "1 0 0 0" gravcomp="1">
+          <!-- <geom name = "arm_base_link_geom" type="mesh" mesh="arm_base" pos = "0 0 0" quat="1 0 0 0" mass="0.1"/> -->
+          <geom name = "arm_base_link_geom" type="box" size = "0.02 0.02 0.02" pos = "0 0 0" quat="1 0 0 0" mass="0.1" contype="0" conaffinity="0"/>
+          <body name="manipulation_link1_pitch_link" pos="0.0 0.0 0.06475" quat="1 0 0 0" gravcomp="1">
+              <geom name = "manipulation_link1_pitch_link_geom" type="mesh" mesh="arm_link1_pitch" pos = "0 0 0" quat="0.707 0.707 0 0" mass = "0.1" contype="0" conaffinity="0"/>
+              <joint name="arm_link1_pitch_joint" type="hinge" limited= "false" pos="0 0 0" axis="0 1 0" range="-1000 10080.0" damping="1"/>
+              <!-- <joint name="arm_link1_pitch_joint" type="hinge" limited= "false" pos="0 0 0" axis="0 1 0" range="0 180.0" damping="0.0"/> -->
+              <body name="manipulation_link2_pitch_link" pos="-0.3795 0.0 0.059" quat="0.707 0.707 0 0" gravcomp="1">
+                  <geom name = "manipulation_link2_pitch_link_geom" type="mesh" mesh="arm_link2_pitch" mass="0.1" class="visual" contype="0" conaffinity="0"/>
+                  <joint name="arm_link2_pitch_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1000 1275" damping="1" limited = 'false'/>
+                  <!-- <joint name="arm_link2_pitch_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-10 275" damping="0.0" limited = 'false'/> -->
+                  <frame name = "manipulation_link3_pitch_link" pos = "0.4475 0 0" quat = "1 0.0 0. 0">
+                    <site name="manipulation_link3_pitch_link_site" pos="0 0 0" />
+                    
+                      <!-- <geom name = "manipulation_link3_pitch_link_geom" type="mesh" mesh="arm_link3_pitch" mass="0.1" class="visual"/> -->
+                      <!-- <joint name="arm_link3_pitch_joint" type="hinge" pos="0.0 0 0" axis="0 0 1" range="-10 10" damping="0.01"/> -->
+                      <!-- Red cylinder along X-axis -->
+                      <!-- <inertial mass="1e-3" diaginertia="1e-4 1e-4 1e-4" pos="0 0 0"/> -->
+                      <!-- X axis (red) -->
+                      <geom name="x_axis" type="cylinder"
+                            pos="0.1 0 0" size="0.01 0.1"
+                            quat="0.7071 0 0.7071 0"
+                            rgba="1 0 0 1"
+                            class='visual'
+                            mass="0"
+                            contype="0" conaffinity="0"/>
+                      <!-- Y axis (green) -->
+                      <geom name="y_axis" type="cylinder"
+                            pos="0 0.1 0" size="0.01 0.1"
+                            quat="0.7071 0.7071 0 0"
+                            rgba="0 1 0 1"
+                            class='visual'
+                            mass="0"
+                            contype="0" conaffinity="0"/>
+                      <!-- Z axis (blue) -->
+                      <geom name="z_axis" type="cylinder"
+                            pos="0 0 0.1" size="0.01 0.1"
+                            quat="1 0 0 0"
+                            rgba="0 0 1 1"
+                            class='visual'
+                            mass="0"
+                            contype="0" conaffinity="0"/>
+                      
+                      <!-- <body name= "manipulation_link4_roll_link" pos = "0.071 0 0" quat = "1 0 0 0"> -->
+                          <!-- <geom name = "manipulation_link4_roll_link_geom" type="mesh" mesh="v2_arm_link4_roll" mass="0.01"/> -->
+                          <!-- <joint name="arm_link4_roll_joint" type="hinge" pos="0 0 0" axis="-1 0 0" range="-10 10" damping="0.01"/> -->
+                          
+                      <!-- </body>  -->
+                  </frame> 
+              </body>
+          </body>
+      </body>
+
+      <!-- ###########################  END ARM ##########################  -->
+
+    </body>
+
+  </worldbody>
+
+  <!-- ################# BASE ACTUATORS ##################### -->
+  <!-- Force Control (TODO: Make the site the center of mass)-->
+  <actuator>
+    <motor group="1" class="hex" name="fx" site="hex_body" gear="1 0 0 0 0 0" />
+    <motor group="1" class="hex" name="fy" site="hex_body" gear="0 1 0 0 0 0" />
+    <motor group="1" class="hex" name="fz" site="hex_body" gear="0 0 1 0 0 0" />
+    <!-- <motor group="1" class="hex" name="wx" site="hex_body" gear="0 0 0 1 0 0" />
+    <motor group="1" class="hex" name="wy" site="hex_body" gear="0 0 0 0 1 0" /> -->
+    <motor group="1" class="hex" name="wz" site="hex_body" gear="0 0 0 0 0 1" />
+  </actuator>
+  <!-- Velocity Control -->
+  <!-- <actuator>
+    <motor group="2" class="hex" name="fx" joint="root_x" gear="1" />
+    <motor group="2" class="hex" name="fy" site="root_y" gear="1" />
+    <motor group="2" class="hex" name="fz" site="root_z" gear="1" />
+    <motor group="2" class="hex" name="wx" site="root_roll" gear="1" />
+    <motor group="2" class="hex" name="wy" site="root_pitch" gear="1" />
+    <motor group="2" class="hex" name="wz" site="root_yaw" gear="1" />
+  </actuator> -->
+
+  <!-- ################# END BASE ACTUATORS ##################### -->
+  <!-- ################# ARM ACTUATORS ################### -->
+  <actuator>
+    <position name="arm_pitch_1" joint="arm_link1_pitch_joint"  dampratio="1" kp = "10"/>
+    <position name="arm_pitch_2" joint="arm_link2_pitch_joint"  dampratio='1' kp = "10"/>
+    <!-- <position name="arm_pitch_3" joint="arm_link3_pitch_joint"  dampratio='1'/> -->
+    <!-- <position  name="arm_roll" joint="arm_link4_roll_joint" /> -->
+  </actuator>
+  <!-- ################# END ARM ACTUATORS ################### -->
+
+  <!-- ################# SENSORS ################### -->
+  <sensor>
+    <gyro name="body_gyro" site="imu" />
+    <accelerometer name="body_linacc" site="imu" />
+    <framequat name="body_quat" objtype="site" objname="imu" />
+    <framepos name="body_pos" objtype="site" objname="imu" />
+    <framelinvel name="body_linvel" objtype="site" objname="imu" />
+    <frameangvel name="body_angvel" objtype="site" objname="imu" />
+    <framepos name="end_effector_pos" objtype="site" objname="manipulation_link3_pitch_link_site" />
+    <framequat name="end_effector_quat" objtype="site" objname="manipulation_link3_pitch_link_site" />
+  </sensor>
+  <!-- ################# END SENSORS ################### -->
+</mujoco>
