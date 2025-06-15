@@ -207,7 +207,8 @@ class Hexcopter3DEnv(PipelineEnv):
         reward_drone_survive = self.config.stage_config.reward_drone_survive(p)
 
         # --- Distance to target ---
-        reward_drone_dist_to_target = self._reward_dist_to_target(reward_args, p, "exp")
+        # reward_drone_dist_to_target = self._reward_dist_to_target(reward_args, p, "exp")
+        reward_drone_dist_to_target = 0.0
 
         # --- Distance from target end effector position ---
         reward_end_effector_dist_to_target = self._reward_end_effector_dist_to_target(reward_args, p, "exp")
@@ -229,8 +230,8 @@ class Hexcopter3DEnv(PipelineEnv):
 
 
         # --- Action ---
-        # reward_drone_action = self._reward_drone_action(reward_args, p, "squared")
-        reward_drone_action = 0.0
+        reward_drone_action = self._reward_drone_action(reward_args, p, "squared")
+        # reward_drone_action = 0.0
         # --- Action change ---
         # reward_drone_action_change = self._reward_drone_action_change(reward_args, p, "squared")
         reward_drone_action_change = 0.0
@@ -389,7 +390,7 @@ class Hexcopter3DEnv(PipelineEnv):
 
 
     def _reward_drone_action(self, reward_args: RewardArgs, p: jp.ndarray, weight_type: Literal["squared", "exp"] = "squared"):
-        action = reward_args.next_pipeline_state.prop_action_norm  # - self.hover_prop_norm_action
+        action = reward_args.next_pipeline_state.last_action[:4]
         if weight_type == "squared":
             return self.config.stage_config.reward_drone_action(p) * jp.sum((action) ** 2) / 4
 
@@ -421,7 +422,7 @@ class Hexcopter3DEnv(PipelineEnv):
     def _reward_end_effector_dist_to_target(self, reward_args: RewardArgs, p: jp.ndarray, weight_type: Literal["squared", "exp"] = "squared"):
         next_pipeline_state = reward_args.next_pipeline_state
         next_sensor_data = next_pipeline_state.sensor_data_realtime
-        goal_pos = sample_trajectory(next_pipeline_state.trajectory, next_pipeline_state.original_pipeline_state.time, K = 0)[0]
+        goal_pos = sample_trajectory(next_pipeline_state.trajectory, next_pipeline_state.original_pipeline_state.time, K = 1)[0]
         if weight_type == "squared":
             return self.config.stage_config.reward_end_effector_dist_to_target(p) * jp.linalg.norm(next_sensor_data.end_effector_position - goal_pos) ** 2
         elif weight_type == "exp":

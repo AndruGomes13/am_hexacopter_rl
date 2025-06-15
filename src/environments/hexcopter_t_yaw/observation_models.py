@@ -206,14 +206,14 @@ class ActorFullObservationWithHistory(Observation):
     # last_prop_action_norm: Annotated[jp.ndarray, (4,)]
     action_history: Annotated[jp.ndarray, ("ACTION_HISTORY_LEN", "ACTION_SIZE")]
 
-    trajectory_forward: Annotated[jp.ndarray, (10,3)]
+    trajectory_forward: Annotated[jp.ndarray, (5,3)]
 
     @classmethod
     def get_observation(cls, state: AugmentedPipelineState) -> Self:
         sensor_data = state.sensor_data_realtime
         # Orientation 3x3
         # orientation_matrix = Rotation.from_quat(sensor_data.drone_imu_orientation_quat_wxyz).as_matrix()
-        trajectory_forward = sample_trajectory(state.trajectory, state.original_pipeline_state.time, 0.2, 10)[0] - sensor_data.drone_imu_position
+        trajectory_forward = sample_trajectory(state.trajectory, state.original_pipeline_state.time, 0.2, 5)[0] - sensor_data.drone_imu_position
         return cls(
             drone_imu_position=sensor_data.drone_imu_position,
             drone_imu_orientation_quat_wxyz=sensor_data.drone_imu_orientation_quat_wxyz,
@@ -246,6 +246,8 @@ class CriticFullObservationWithHistory(Observation):
     # drone_imu_body_rate: jp.ndarray
     drone_imu_angular_velocity: Annotated[jp.ndarray, (3,)]
 
+    end_effector_position: Annotated[jp.ndarray, (3,)]  # Position of the end effector in world coordinates
+    trajectory_forward: Annotated[jp.ndarray, (5,3)]
 
     # --- Last action ---
     # last_action: Annotated[jp.ndarray, (4,)]  # TODO: This expects action of size 4. Make this dynamic.
@@ -258,6 +260,8 @@ class CriticFullObservationWithHistory(Observation):
         # Orientation 3x3
         # orientation_matrix = Rotation.from_quat(sensor_data.drone_imu_orientation_quat_wxyz).as_matrix()
 
+        trajectory_forward = sample_trajectory(state.trajectory, state.original_pipeline_state.time, 0.2, 5)[0] - sensor_data.drone_imu_position
+        
         return cls(
             drone_imu_position=sensor_data.drone_imu_position,
             drone_imu_orientation_quat_wxyz=sensor_data.drone_imu_orientation_quat_wxyz,
@@ -265,6 +269,8 @@ class CriticFullObservationWithHistory(Observation):
             drone_imu_velocity=sensor_data.drone_imu_velocity,
             drone_imu_angular_velocity=sensor_data.drone_imu_angular_velocity,
             action_history=state.action_history,
+            end_effector_position=sensor_data.end_effector_position,
+            trajectory_forward = trajectory_forward
         )
 
 def critic_observation_model_factory(observation_model_type: CriticObservationType) -> type[Observation]:
